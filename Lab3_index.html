@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cricket Player Accessibility Hub</title>
+<style>
+:root {
+    --bg: #080d18; --fg: #e8eef4; --card: #111b2b; --mut: #9eacc1; 
+    --ac: #64e8a5; --acfg: #08262a; --bd: #243249; --ok: #6fdc96; --bad: #ff9a92;
+}
+:root[data-theme=light] {
+    --bg: #f2f5f8; --fg: #14202b; --card: #fff; --mut: #46525e; 
+    --ac: #0b5c63; --acfg: #fff; --bd: #6b7886; --ok: #0a6b2e; --bad: #a4170f;
+}
+:root[data-theme=contrast] {
+    --bg: #000; --fg: #fff; --card: #000; --mut: #fff; 
+    --ac: #ffee00; --acfg: #000; --bd: #fff; --ok: #00ff7f; --bad: #ff7b72;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); min-height: 100vh; line-height: 1.6; transition: background 0.3s, color 0.3s; }
+
+:focus-visible { outline: 3px solid var(--ac); outline-offset: 3px; }
+
+.skip-link {
+    position: absolute; left: 1rem; top: -4rem; background: var(--ac); color: var(--acfg); padding: 0.7rem 1rem; z-index: 100; font-weight: bold; text-decoration: none; border-radius: 6px;
+}
+.skip-link:focus { top: 1rem; }
+
+header {
+    padding: 22px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--bd);
+    background: var(--card);
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+header h1 { color: var(--ac); font-size: 25px; }
+header p { color: var(--mut); font-size: 13px; margin-top: 4px; }
+
+.header-controls { display: flex; align-items: center; gap: 10px; }
+
+.nav-tabs {
+    display: flex;
+    gap: 8px;
+    background: var(--card);
+    padding: 10px 5%;
+    border-bottom: 1px solid var(--bd);
+    overflow-x: auto;
+}
+
+.nav-tab-btn {
+    background: transparent;
+    border: 2px solid var(--bd);
+    color: var(--fg);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.nav-tab-btn:hover { background: var(--bd); }
+.nav-tab-btn.active { background: var(--ac); color: var(--acfg); border-color: var(--ac); }
+
+main { max-width: 1450px; margin: auto; padding: 28px 4%; }
+
+.page-view { display: none; }
+.page-view.active-page { display: block; }
+
+.intro { text-align: center; margin-bottom: 24px; }
+.intro h2 { font-size: 30px; margin-bottom: 10px; color: var(--fg); }
+.intro p { color: var(--mut); line-height: 1.6; max-width: 70ch; margin: 0 auto; }
+
+button, select, input[type=text] {
+    border: 2px solid var(--bd);
+    border-radius: 8px;
+    padding: 11px 17px;
+    background: var(--card);
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 2.75rem;
+    transition: 0.2s;
+}
+
+button:hover { background: var(--bd); }
+button.primary { background: var(--ac); color: var(--acfg); border-color: var(--ac); }
+button.primary:hover { opacity: 0.9; }
+
+/* Search Input Styling */
+#searchPlayer {
+    max-width: 280px;
+    width: 100%;
+    border-color: var(--ac);
+    background: var(--bg);
+}
+#searchPlayer::placeholder { color: var(--mut); }
+
+/* 3D Gallery */
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 25px;
+    perspective: 1500px;
+    perspective-origin: center center;
+    padding: 20px 0;
+}
+
+.player-card {
+    min-width: 0;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(17, 27, 43, 0.9), rgba(36, 50, 73, 0.8));
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform-style: preserve-3d;
+    position: relative;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+}
+
+.player-card:nth-child(odd) { transform: rotateY(-10deg) rotateX(5deg) translateZ(0); }
+.player-card:nth-child(even) { transform: rotateY(10deg) rotateX(-5deg) translateZ(0); }
+.player-card:nth-child(3n) { transform: rotateY(-5deg) rotateX(8deg) translateZ(10px); }
+.player-card:nth-child(4n) { transform: rotateY(8deg) rotateX(-8deg) translateZ(5px); }
+
+.player-card:hover { 
+    transform: translateY(-15px) translateZ(40px) scale(1.05) rotateX(0) rotateY(0);
+    border-color: var(--ac);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.6), 0 0 20px rgba(100, 232, 165, 0.2);
+    z-index: 20;
+}
+
+.player-card.selected { 
+    border-color: var(--ac); 
+    box-shadow: 0 0 25px rgba(100, 232, 165, 0.4), 0 20px 40px rgba(0,0,0,0.5);
+    transform: translateZ(20px) scale(1.02) rotateX(0) rotateY(0);
+    z-index: 10;
+}
+
+.player-card.selected:hover {
+    transform: translateY(-15px) translateZ(50px) scale(1.05);
+}
+
+.player-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    display: block;
+    background: var(--bd);
+    transition: transform 0.6s ease;
+}
+
+.player-card:hover img { transform: scale(1.1); }
+.player-card .card-info { padding: 15px; position: relative; z-index: 2; }
+.player-card h3 { font-size: 16px; margin-bottom: 6px; color: var(--fg); font-weight: 700; }
+.player-card p { font-size: 13px; color: var(--mut); }
+
+/* Details Layout & Stats */
+.details-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 350px) 1fr;
+    gap: 30px;
+    align-items: start;
+    background: var(--card);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid var(--bd);
+}
+
+.details-layout img {
+    width: 100%;
+    max-height: 450px;
+    object-fit: cover;
+    border-radius: 12px;
+    background: var(--bg);
+    border: 1px solid var(--bd);
+}
+
+.details-layout h2 { color: var(--ac); font-size: 32px; margin-bottom: 8px; }
+.details-layout .subtitle { color: var(--mut); margin-bottom: 25px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.info {
+    padding: 16px;
+    border-radius: 10px;
+    background: var(--bg);
+    border: 1px solid var(--bd);
+}
+.info span { display: block; color: var(--mut); font-size: 12px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.info strong { font-size: 16px; color: var(--fg); }
+
+/* Match Statistics Grid */
+.stats-section {
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid var(--bd);
+}
+.stats-section h3 { color: var(--ac); margin-bottom: 15px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.stat-box {
+    background: var(--card);
+    padding: 15px 10px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid var(--bd);
+    transition: transform 0.2s;
+}
+.stat-box:hover { transform: translateY(-3px); border-color: var(--ac); }
+.stat-box .stat-number { font-size: 24px; font-weight: 800; color: var(--ac); display: block; margin-bottom: 4px; }
+.stat-box .stat-name { font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.zoom-controls { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
+/* Lab Cards */
+.lab-card {
+    background: var(--card);
+    border: 2px solid var(--bd);
+    padding: 24px;
+    border-radius: 12px;
+}
+.lab-card h3 { color: var(--ac); margin-bottom: 15px; font-size: 20px; }
+.row-group { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+
+input[type=color] {
+    width: 3.5rem; height: 2.75rem; padding: 2px; border: 2px solid var(--bd); background: var(--card); cursor: pointer; border-radius: 8px; vertical-align: middle;
+}
+
+fieldset { border: 2px solid var(--bd); padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+legend { font-weight: bold; color: var(--ac); padding: 0 6px; }
+pre { background: var(--bg); border: 2px solid var(--bd); padding: 15px; overflow-x: auto; white-space: pre-wrap; margin-top: 15px; border-radius: 8px; color: var(--fg); }
+
+dialog {
+    background: var(--card);
+    color: var(--fg);
+    border: 3px solid var(--ac);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 32rem;
+    margin: auto;
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.7); }
+
+.live-status {
+    margin-top: 25px;
+    text-align: center;
+    color: var(--fg);
+    font-size: 14px;
+    background: var(--card);
+    padding: 14px;
+    border-radius: 8px;
+    border: 2px solid var(--bd);
+}
+
+footer { text-align: center; color: var(--mut); padding: 25px 12px; font-size: 12px; margin-top: 40px; border-top: 1px solid var(--bd); }
+
+@media (max-width: 1000px) { 
+    .gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .player-card:nth-child(n) { transform: none !important; }
+    .player-card:hover { transform: translateY(-5px) scale(1.02) !important; }
+    .details-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+    .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header>
+    <div>
+        <h1>🏏 Cricket Player Accessibility Hub</h1>
+        <p>Adaptive UI, Search & Keyboard Control</p>
+    </div>
+    <div class="header-controls">
+        <label for="themeSelect">Theme:</label>
+        <select id="themeSelect" aria-label="Select website theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="contrast">High Contrast</option>
+        </select>
+    </div>
+</header>
+
+<nav class="nav-tabs" aria-label="Main Pages">
+    <button class="nav-tab-btn active" data-target="page-gallery" aria-selected="true" role="tab">1. Gallery</button>
+    <button class="nav-tab-btn" data-target="page-details" aria-selected="false" role="tab">2. Details</button>
+    <button class="nav-tab-btn" data-target="page-contrast" aria-selected="false" role="tab">3. Contrast Lab</button>
+    <button class="nav-tab-btn" data-target="page-audit" aria-selected="false" role="tab">4. Audit Report</button>
+</nav>
+
+<main id="main" tabindex="-1">
+
+    <section id="page-gallery" class="page-view active-page" role="tabpanel">
+        <div class="intro">
+            <h2>Player Gallery</h2>
+            <p>Press <strong>Ctrl + S</strong> to search. Use Tab, Enter, or Arrow Keys to navigate. Press <strong>Esc</strong> to return here from any page.</p>
+        </div>
+        <div class="controls" style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="searchPlayer" placeholder="Search player (Ctrl+S)..." aria-label="Search player by name">
+            <button class="primary" id="gotoDetailsBtn">View Selected Profile</button>
+            <button id="openInfoModal">Quick Guide</button>
+        </div>
+        <div class="gallery" id="gallery" aria-label="Cricket Players Gallery"></div>
+    </section>
+
+    <section id="page-details" class="page-view" role="tabpanel">
+        <div class="intro">
+            <h2>Player Detailed Profile</h2>
+            <p>Complete statistical breakdown. Press <strong>Esc</strong> to go back to gallery.</p>
+        </div>
+        <div class="details-layout">
+            <img id="detailImage" src="" alt="Selected cricket player full view">
+            <div>
+                <h2 id="detailName"></h2>
+                <p class="subtitle" id="detailSubtitle"></p>
+
+                <div class="info-grid">
+                    <div class="info"><span>Team</span><strong id="detailTeam"></strong></div>
+                    <div class="info"><span>Role</span><strong id="detailRole"></strong></div>
+                    <div class="info"><span>Nationality</span><strong id="detailNationality"></strong></div>
+                    <div class="info"><span>Age</span><strong id="detailAge"></strong></div>
+                </div>
+
+                <div class="stats-section">
+                    <h3>📊 Career Match Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box"><span class="stat-number" id="statMatches">0</span><span class="stat-name">Matches</span></div>
+                        <div class="stat-box"><span class="stat-number" id="statRuns">0</span><span class="stat-name" id="statRunsLabel">Runs</span></div>
+                        <div class="stat-box"><span class="stat-number" id="statAverage">0</span><span class="stat-name">Average</span></div>
+                        <div class="stat-box"><span class="stat-number" id="statStrikeRate">0</span><span class="stat-name" id="statSRLabel">Strike Rate</span></div>
+                        <div class="stat-box"><span class="stat-number" id="statHundreds">0</span><span class="stat-name" id="stat100sLabel">100s</span></div>
+                        <div class="stat-box"><span class="stat-number" id="statFifties">0</span><span class="stat-name" id="stat50sLabel">50s</span></div>
+                    </div>
+                </div>
+
+                <div class="zoom-controls">
+                    <button id="zoomIn">＋ Zoom In</button>
+                    <button id="zoomOut">－ Zoom Out</button>
+                    <button id="backToGalleryBtn">Back to Gallery (Esc)</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-contrast" class="page-view" role="tabpanel">
+        <div class="intro">
+            <h2>Color Contrast Customizer</h2>
+            <p>Test WCAG 1.4.3 standards and optionally apply the colors to the entire website.</p>
+        </div>
+        <div class="lab-card">
+            <h3>Live Color Contrast Checker</h3>
+            <div class="row-group">
+                <div>
+                    <label for="fgc">Text Color</label><br>
+                    <input type="color" id="fgc" value="#64e8a5">
+                    <input type="text" id="fgh" value="#64e8a5" aria-label="Text color hex" size="8">
+                </div>
+                <div>
+                    <label for="bgc">Background Color</label><br>
+                    <input type="color" id="bgc" value="#080d18">
+                    <input type="text" id="bgh" value="#080d18" aria-label="Background color hex" size="8">
+                </div>
+            </div>
+            <p style="margin-top: 10px;"><strong>Contrast Ratio: <span id="ratio"></span>:1</strong></p>
+            <ul id="contrastResults" style="list-style: none; margin-top: 8px; line-height: 1.8;"></ul>
+            <div id="previewBox" style="margin-top: 15px; padding: 15px; border-radius: 8px; border: 2px solid var(--bd);">
+                <p style="font-size: 1rem; margin:0;">Normal text sample preview</p>
+                <p style="font-size: 1.5rem; margin:5px 0 0; font-weight: bold;">Large text sample preview</p>
+            </div>
+            <div class="row-group" style="margin-top: 20px;">
+                <button id="applyContrastBtn" class="primary">✨ Apply Colors to Website</button>
+                <button id="resetThemeBtn">Reset to Default Theme</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-audit" class="page-view" role="tabpanel">
+        <div class="intro">
+            <h2>Audit Report Page</h2>
+            <p>Review and generate formal WCAG 2.1 accessibility audit reports.</p>
+        </div>
+        <div class="lab-card">
+            <h3>Compliance Audit Report Generator</h3>
+            <div id="chk"></div>
+            <div class="row-group" style="margin-top: 15px;">
+                <button class="primary" id="gen">Generate Audit Report</button>
+                <button id="cpy">Copy Report as Text</button>
+            </div>
+            <pre id="rep" tabindex="-1">Choose 'Generate Audit Report' to build a summary.</pre>
+            <p id="cpst" role="status" style="margin-top: 10px;"></p>
+        </div>
+    </section>
+
+    <dialog id="infoDlg" aria-labelledby="dlgTitle" aria-describedby="dlgDesc">
+        <h3 id="dlgTitle">Keyboard Navigation Guide</h3>
+        <p id="dlgDesc" style="margin: 12px 0 20px;">
+            • <strong>Ctrl + S</strong>: Focus Search Bar<br>
+            • <strong>Enter</strong> (in search): Open player details<br>
+            • <strong>Tab / Shift+Tab</strong>: Move between elements<br>
+            • <strong>Arrow Keys</strong>: Navigate gallery<br>
+            • <strong>Esc</strong>: Close dialogs or return to Gallery
+        </p>
+        <button class="primary" id="closeDlg">Got it, Close</button>
+    </dialog>
+
+    <div class="live-status" id="interactionStatus" role="status" aria-live="polite">
+        Ready. Press Ctrl+S to search, or use Arrow Keys to navigate.
+    </div>
+</main>
+
+<footer>
+    Cricket Player Accessibility Hub · Fully Accessible & 3D Enabled
+</footer>
+
+<script>
+const navButtons = document.querySelectorAll(".nav-tab-btn");
+const pageViews = document.querySelectorAll(".page-view");
+const interactionStatus = document.getElementById("interactionStatus");
+
+function switchPage(targetId) {
+    navButtons.forEach(btn => {
+        const match = btn.dataset.target === targetId;
+        btn.classList.toggle("active", match);
+        btn.setAttribute("aria-selected", match);
+    });
+    pageViews.forEach(page => {
+        page.classList.toggle("active-page", page.id === targetId);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+navButtons.forEach(btn => {
+    btn.addEventListener("click", () => switchPage(btn.dataset.target));
+});
+
+const themeSelect = document.getElementById("themeSelect");
+themeSelect.value = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+document.documentElement.dataset.theme = themeSelect.value;
+themeSelect.onchange = (e) => {
+    document.documentElement.dataset.theme = e.target.value;
+    // Clear inline custom colors when theme changes
+    document.documentElement.style.removeProperty('--fg');
+    document.documentElement.style.removeProperty('--bg');
+};
+
+// Enhanced Player Data with Match Statistics
+const players = [
+    { name: "Babar Azam", team: "Pakistan", role: "Top Order Batter", nationality: "Pakistani", age: "31", image: "https://i.pinimg.com/1200x/bc/3b/c7/bc3bc7a1cf12fdd89578b9b0977a268f.jpg", pos: "center 20%", stats: { matches: 287, runs: 11456, average: 56.8, strikeRate: 89.5, hundreds: 28, fifties: 54 } },
+    { name: "Shadab Khan", team: "Pakistan", role: "All-Rounder", nationality: "Pakistani", age: "27", image: "https://i.pinimg.com/1200x/4e/ae/3b/4eae3b33a0ea2879c64bc981d17fe46b.jpg", pos: "center 25%", stats: { matches: 156, runs: 2345, average: 24.5, strikeRate: 125.3, hundreds: 0, fifties: 12 } },
+    { name: "Pat Cummins", team: "Australia", role: "Fast Bowler / Captain", nationality: "Australian", age: "33", image: "https://i.pinimg.com/1200x/a6/3b/64/a63b64be653c5b1d268226bd76119480.jpg", pos: "center 20%", stats: { matches: 245, wickets: 378, average: 22.8, economy: 6.2, fiveWickets: 18, matches4: 245 } },
+    { name: "Muhammad Rizwan", team: "Pakistan", role: "Wicketkeeper-Batter", nationality: "Pakistani", age: "34", image: "https://i.pinimg.com/1200x/13/1d/c3/131dc32a2c9210ae62cfc0e42968f492.jpg", pos: "center 20%", stats: { matches: 234, runs: 8765, average: 48.9, strikeRate: 128.4, hundreds: 8, fifties: 62 } },
+    { name: "Muhammad Amir", team: "Pakistan", role: "Fast Bowler", nationality: "Pakistani", age: "34", image: "https://i.pinimg.com/1200x/e4/02/27/e402272e8e83d6b9b5272e497188cb8d.jpg", pos: "center 20%", stats: { matches: 198, wickets: 289, average: 24.3, economy: 5.8, fiveWickets: 12, matches4: 198 } },
+    { name: "Kane Williamson", team: "New Zealand", role: "Top Order Batter", nationality: "New Zealander", age: "36", image: "https://i.pinimg.com/736x/82/c6/09/82c609bfbe11026670d2f7469ceb76c2.jpg", pos: "center 20%", stats: { matches: 312, runs: 13245, average: 52.3, strikeRate: 82.1, hundreds: 32, fifties: 68 } },
+    { name: "Mitchell Starc", team: "Australia", role: "Fast Bowler", nationality: "Australian", age: "36", image: "https://i.pinimg.com/736x/fa/9d/05/fa9d0529cc883c84b70a16a1fb654512.jpg", pos: "center 20%", stats: { matches: 267, wickets: 412, average: 23.5, economy: 6.5, fiveWickets: 22, matches4: 267 } },
+    { name: "AB de Villiers", team: "South Africa", role: "Wicketkeeper-Batter", nationality: "South African", age: "42", image: "https://i.pinimg.com/1200x/6f/93/d2/6f93d20e0b877c05a7d624a903ebb036.jpg", pos: "center 20%", stats: { matches: 420, runs: 20567, average: 53.5, strikeRate: 101.2, hundreds: 47, fifties: 115 } },
+    { name: "Chris Gayle", team: "West Indies", role: "Opening Batter", nationality: "Jamaican", age: "46", image: "https://i.pinimg.com/1200x/20/62/9e/20629ec90e67f11aad340a061d69c53a.jpg", pos: "center 20%", stats: { matches: 483, runs: 19876, average: 42.3, strikeRate: 142.5, hundreds: 42, fifties: 98 } },
+    { name: "Glenn Maxwell", team: "Australia", role: "All-Rounder", nationality: "Australian", age: "37", image: "https://i.pinimg.com/736x/4a/07/c1/4a07c14a29352ead61f41ac573bf6b9b.jpg", pos: "center 20%", stats: { matches: 289, runs: 8934, average: 33.8, strikeRate: 154.3, hundreds: 12, fifties: 48 } }
+];
+
+const gallery = document.getElementById("gallery");
+const searchInput = document.getElementById("searchPlayer");
+
+let selectedIndex = 0;
+let zoomLevel = 1;
+
+function makeFallbackImage(name) {
+    return "https://placehold.co/500x650/172236/64e8a5?text=" + encodeURIComponent(name);
+}
+
+function renderGallery() {
+    gallery.innerHTML = "";
+    players.forEach((player, index) => {
+        const card = document.createElement("article");
+        card.className = "player-card";
+        card.tabIndex = index === 0 ? 0 : -1;
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", player.name + ", " + player.team + " " + player.role);
+        card.dataset.index = index;
+        card.dataset.name = player.name.toLowerCase();
+
+        const img = document.createElement("img");
+        img.src = player.image;
+        img.style.objectPosition = player.pos;
+        img.alt = "";
+        img.loading = "lazy";
+        img.onerror = function () { this.onerror = null; this.src = makeFallbackImage(player.name); };
+
+        const info = document.createElement("div");
+        info.className = "card-info";
+        info.innerHTML = `<h3>${player.name}</h3><p>${player.team} · ${player.role}</p>`;
+        
+        card.append(img, info);
+
+        card.addEventListener("click", () => {
+            selectedIndex = index;
+            updateSelection();
+            showPlayerDetails();
+        });
+        
+        card.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                selectedIndex = index;
+                updateSelection();
+                showPlayerDetails();
+            }
+        });
+
+        gallery.appendChild(card);
+    });
+    updateSelection();
+}
+
+function updateSelection() {
+    const cards = document.querySelectorAll(".player-card");
+    cards.forEach((card, index) => {
+        const isSelected = index === selectedIndex;
+        card.classList.toggle("selected", isSelected);
+        card.setAttribute("aria-selected", isSelected);
+        card.tabIndex = isSelected ? 0 : -1;
+    });
+}
+
+// --- SEARCH FUNCTIONALITY ---
+searchInput.addEventListener("input", (e) => {
+    const query = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll(".player-card");
+    cards.forEach((card) => {
+        const name = card.dataset.name;
+        card.style.display = name.includes(query) ? "block" : "none";
+    });
+});
+
+searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        const query = searchInput.value.toLowerCase().trim();
+        if (!query) return;
+
+        const foundIndex = players.findIndex(p => p.name.toLowerCase().includes(query));
+        if (foundIndex !== -1) {
+            selectedIndex = foundIndex;
+            updateSelection();
+            showPlayerDetails();
+            searchInput.value = ""; // Clear search
+            // Reset gallery display
+            document.querySelectorAll(".player-card").forEach(c => c.style.display = "block");
+        } else {
+            interactionStatus.textContent = "Player not found. Try another name.";
+        }
+    }
+});
+
+function selectNext() {
+    selectedIndex = (selectedIndex + 1) % players.length;
+    updateSelection();
+    interactionStatus.textContent = "Selected: " + players[selectedIndex].name;
+    const cards = document.querySelectorAll(".player-card");
+    if(cards[selectedIndex]) cards[selectedIndex].focus();
+}
+
+function selectPrevious() {
+    selectedIndex = (selectedIndex - 1 + players.length) % players.length;
+    updateSelection();
+    interactionStatus.textContent = "Selected: " + players[selectedIndex].name;
+    const cards = document.querySelectorAll(".player-card");
+    if(cards[selectedIndex]) cards[selectedIndex].focus();
+}
+
+function showPlayerDetails() {
+    const p = players[selectedIndex];
+    const detailImg = document.getElementById("detailImage");
+    detailImg.src = p.image;
+    detailImg.alt = "Detailed full portrait of " + p.name;
+    detailImg.onerror = function () { this.onerror = null; this.src = makeFallbackImage(p.name); };
+
+    document.getElementById("detailName").textContent = p.name;
+    document.getElementById("detailSubtitle").textContent = p.team + " | " + p.role;
+    document.getElementById("detailTeam").textContent = p.team;
+    document.getElementById("detailRole").textContent = p.role;
+    document.getElementById("detailNationality").textContent = p.nationality;
+    document.getElementById("detailAge").textContent = p.age + " years";
+
+    // Dynamic Stats Population
+    const isBowler = p.role.toLowerCase().includes("bowler");
+    document.getElementById("statMatches").textContent = p.stats.matches || p.stats.matches4 || 0;
+    
+    document.getElementById("statRuns").textContent = isBowler ? (p.stats.wickets || 0) : (p.stats.runs || 0);
+    document.getElementById("statRunsLabel").textContent = isBowler ? "Wickets" : "Runs";
+    
+    document.getElementById("statAverage").textContent = (p.stats.average || 0).toFixed(1);
+    
+    document.getElementById("statStrikeRate").textContent = isBowler ? (p.stats.economy || 0) : (p.stats.strikeRate || 0);
+    document.getElementById("statSRLabel").textContent = isBowler ? "Economy" : "Strike Rate";
+    
+    document.getElementById("statHundreds").textContent = isBowler ? (p.stats.fiveWickets || 0) : (p.stats.hundreds || 0);
+    document.getElementById("stat100sLabel").textContent = isBowler ? "5 Wickets" : "100s";
+    
+    document.getElementById("statFifties").textContent = isBowler ? (p.stats.matches4 || 0) : (p.stats.fifties || 0);
+    document.getElementById("stat50sLabel").textContent = isBowler ? "Matches" : "50s";
+
+    switchPage("page-details");
+    zoomLevel = 1;
+    applyZoom();
+    interactionStatus.textContent = "Viewing detailed profile and statistics for " + p.name;
+}
+
+function applyZoom() {
+    const img = document.getElementById("detailImage");
+    img.style.transform = "scale(" + zoomLevel + ")";
+    img.style.transformOrigin = "center";
+    img.style.transition = "transform 0.2s";
+}
+
+document.getElementById("zoomIn").addEventListener("click", () => {
+    zoomLevel = Math.min(zoomLevel + 0.15, 2.5);
+    applyZoom();
+    interactionStatus.textContent = "Zoomed in: " + Math.round(zoomLevel * 100) + "%";
+});
+document.getElementById("zoomOut").addEventListener("click", () => {
+    zoomLevel = Math.max(zoomLevel - 0.15, 1);
+    applyZoom();
+    interactionStatus.textContent = "Zoomed out: " + Math.round(zoomLevel * 100) + "%";
+});
+
+document.getElementById("gotoDetailsBtn").addEventListener("click", showPlayerDetails);
+document.getElementById("backToGalleryBtn").addEventListener("click", () => switchPage("page-gallery"));
+
+// --- GLOBAL KEYBOARD LISTENER (Ctrl+S, Esc, Arrows) ---
+document.addEventListener("keydown", (e) => {
+    // 1. Ctrl+S or Cmd+S to focus search
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        switchPage("page-gallery");
+        searchInput.focus();
+        interactionStatus.textContent = "Search bar focused. Type a name and press Enter.";
+        return;
+    }
+
+    // 2. Escape Key Logic
+    if (e.key === "Escape") {
+        const dialog = document.getElementById("infoDlg");
+        if (dialog.open) {
+            dialog.close();
+            document.getElementById("openInfoModal").focus();
+            return;
+        }
+        
+        const currentPage = document.querySelector(".page-view.active-page");
+        if (currentPage && currentPage.id !== "page-gallery") {
+            switchPage("page-gallery");
+            interactionStatus.textContent = "Returned to Gallery via Escape key.";
+            const cards = document.querySelectorAll(".player-card");
+            if (cards[selectedIndex]) cards[selectedIndex].focus();
+        }
+    } 
+    // 3. Arrow Keys on Gallery
+    else if (document.getElementById('page-gallery').classList.contains('active-page') && document.activeElement !== searchInput) {
+        if (e.key === "ArrowRight") {
+            e.preventDefault();
+            selectNext();
+        } else if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            selectPrevious();
+        }
+    }
+});
+
+/* Color Contrast Checker & Apply Logic */
+function normalizeHex(h) {
+    h = h.trim();
+    if (/^#[0-9a-f]{3}$/i.test(h)) h = '#' + [...h.slice(1)].map(c => c + c).join('');
+    return /^#[0-9a-f]{6}$/i.test(h) ? h.toLowerCase() : null;
+}
+function getLuminance(h) {
+    const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function calculateRatio(a, b) {
+    const x = getLuminance(a), y = getLuminance(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+const fgc = document.getElementById("fgc"), fgh = document.getElementById("fgh");
+const bgc = document.getElementById("bgc"), bgh = document.getElementById("bgh");
+
+function setupColorPair(picker, textInput) {
+    picker.oninput = () => { textInput.value = picker.value; updateContrast(); };
+    textInput.oninput = () => { const n = normalizeHex(textInput.value); if (n) { picker.value = n; updateContrast(); } };
+}
+setupColorPair(fgc, fgh);
+setupColorPair(bgc, bgh);
+
+const testsList = [['Normal text AA (4.5:1)', 4.5], ['Large text AA (3:1)', 3], ['UI component AA (3:1)', 3], ['Normal text AAA (7:1)', 7]];
+function updateContrast() {
+    const f = normalizeHex(fgh.value), b = normalizeHex(bgh.value);
+    if (!f || !b) return;
+    const r = calculateRatio(f, b);
+    document.getElementById("ratio").textContent = (Math.floor(r * 100) / 100).toFixed(2);
+    document.getElementById("contrastResults").innerHTML = testsList.map(([name, target]) => {
+        const ok = r >= target;
+        return '<li><span style="color:var(--' + (ok ? 'ok' : 'bad') + '); font-weight:bold;">' + (ok ? '✔ Pass' : '✖ Fail') + '</span> ' + name + '</li>';
+    }).join('');
+    document.getElementById("previewBox").style.cssText = 'color:' + f + '; background:' + b + '; margin-top: 15px; padding: 15px; border-radius: 8px; border: 2px solid var(--bd);';
+}
+updateContrast();
+
+// Apply Custom Colors to Website
+document.getElementById("applyContrastBtn").addEventListener("click", () => {
+    const f = normalizeHex(fgh.value);
+    const b = normalizeHex(bgh.value);
+    if (f && b) {
+        document.documentElement.style.setProperty('--fg', f);
+        document.documentElement.style.setProperty('--bg', b);
+        // Slightly adjust card to match background for cohesion
+        document.documentElement.style.setProperty('--card', b); 
+        interactionStatus.textContent = "Custom colors applied to the entire website!";
+    }
+});
+
+// Reset Theme
+document.getElementById("resetThemeBtn").addEventListener("click", () => {
+    document.documentElement.style.removeProperty('--fg');
+    document.documentElement.style.removeProperty('--bg');
+    document.documentElement.style.removeProperty('--card');
+    interactionStatus.textContent = "Website colors reset to default theme.";
+});
+
+const infoDlg = document.getElementById("infoDlg");
+document.getElementById("openInfoModal").addEventListener("click", () => infoDlg.showModal());
+document.getElementById("closeDlg").addEventListener("click", () => infoDlg.close());
+infoDlg.addEventListener("close", () => document.getElementById("openInfoModal").focus());
+
+/* Audit Report Generator */
+const CK = [
+    ['Perceivable', '1.1.1', 'Non-text Content'],
+    ['Perceivable', '1.3.1', 'Info and Relationships'],
+    ['Perceivable', '1.4.3', 'Contrast (Minimum)'],
+    ['Operable', '2.1.1', 'Keyboard Navigation'],
+    ['Operable', '2.1.2', 'No Keyboard Trap (Dialog Focus)'],
+    ['Operable', '2.4.7', 'Focus Visible'],
+    ['Understandable', '3.1.1', 'Language of Page'],
+    ['Robust', '4.1.3', 'Status Messages (Live Region)']
+];
+
+document.getElementById("chk").innerHTML = ['Perceivable', 'Operable', 'Understandable', 'Robust'].map(cat => 
+    '<h4>' + cat + '</h4>' + CK.map((c, i) => c[0] !== cat ? '' : 
+        '<fieldset><legend>SC ' + c[1] + ' ' + c[2] + '</legend>' +
+        ['pass:Pass', 'fail:Fail', 'na:Not applicable'].map(o => {
+            const [v, l] = o.split(':');
+            return '<label style="margin-right:15px;"><input type="radio" name="c' + i + '" value="' + v + '" ' + (v === 'pass' ? 'checked' : '') + '> ' + l + '</label>';
+        }).join('') + '</fieldset>'
+    ).join('')
+).join('');
+
+function generateReport() {
+    const reportLines = ['=== Cricket Player Accessibility Hub Audit Report ===', 'Generated: ' + new Date().toLocaleString(), ''];
+    let passCount = 0, failCount = 0;
+    CK.forEach((c, i) => {
+        const val = (document.querySelector('input[name="c' + i + '"]:checked') || {}).value;
+        if (val === 'pass') passCount++;
+        else if (val === 'fail') failCount++;
+        reportLines.push('SC ' + c[1] + ' ' + c[2] + ': ' + (val ? val.toUpperCase() : 'NOT RATED'));
+    });
+    reportLines.push('', 'Summary: ' + passCount + ' Passed, ' + failCount + ' Failed out of ' + CK.length + ' criteria.');
+    return reportLines.join('\n');
+}
+
+document.getElementById("gen").addEventListener("click", () => {
+    const reportText = generateReport();
+    const repElement = document.getElementById("rep");
+    repElement.textContent = reportText;
+    repElement.focus();
+});
+
+document.getElementById("cpy").addEventListener("click", async () => {
+    const reportText = generateReport();
+    try {
+        await navigator.clipboard.writeText(reportText);
+        document.getElementById("cpst").textContent = "Report successfully copied to clipboard!";
+    } catch (err) {
+        document.getElementById("cpst").textContent = "Copy blocked. Please select and copy text manually.";
+    }
+});
+
+renderGallery();
+</script>
+</body>
+</html>
